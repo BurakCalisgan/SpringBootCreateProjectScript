@@ -1,7 +1,7 @@
 param (
     [string]$ProjectName = "my-awesome-api",
     [string]$GroupId = "com.example",
-    [string]$ArtifactId = "myawesomeapi"
+    [string]$ArtifactId = "my-awesome-api"
 )
 
 # Check if Maven is installed
@@ -12,8 +12,7 @@ if (-not (Get-Command mvn -ErrorAction SilentlyContinue)) {
 
 # Convert project name to PascalCase for class naming (my-awesome-api -> MyAwesomeApi)
 function ConvertToPascalCase($name) {
-    $parts = $name -split '[-_]'
-    return ($parts | ForEach-Object { $_.Substring(0,1).ToUpper() + $_.Substring(1) }) -join ''
+    return ($name -split '[-_]' | ForEach-Object { $_.Substring(0,1).ToUpper() + $_.Substring(1).ToLower() }) -join ''
 }
 
 $ApplicationClassName = "$(ConvertToPascalCase $ArtifactId)Application"
