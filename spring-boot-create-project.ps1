@@ -1,7 +1,7 @@
 param (
-    [string]$ProjectName = "my-api-project",
+    [string]$ProjectName = "my-awesome-api",
     [string]$GroupId = "com.example",
-    [string]$ArtifactId = "my-api"
+    [string]$ArtifactId = "myawesomeapi"
 )
 
 # Check if Maven is installed
@@ -20,8 +20,8 @@ $ApplicationClassName = "$(ConvertToPascalCase $ArtifactId)Application"
 $TestClassName = "$(ConvertToPascalCase $ArtifactId)ApplicationTests"
 $ApplicationName = ConvertToPascalCase $ProjectName  # Convert ProjectName to PascalCase
 
-# Remove dashes from paths (my-awesome-api -> myawesomeapi)
-$ArtifactId = $ArtifactId -replace '[-_]', ''
+# Normalize ArtifactId (remove dashes and underscores)
+$NormalizedArtifactId = $ArtifactId -replace '[-_]', ''
 
 # Set Java version to 23
 $JavaVersion = "23"
@@ -29,25 +29,39 @@ $JavaVersion = "23"
 # Fetch the latest stable Spring Boot version dynamically
 $SpringBootVersion = (Invoke-WebRequest -Uri "https://start.spring.io/metadata/client" -UseBasicParsing | ConvertFrom-Json).bootVersion.default
 
-# Create the project directory
-New-Item -ItemType Directory -Path $ProjectName -Force
-Set-Location -Path $ProjectName
+# Remove existing project folder if it exists
+if (Test-Path $ProjectName) {
+    Remove-Item -Recurse -Force $ProjectName
+}
 
-# Generate the Maven project
-mvn archetype:generate -DgroupId=$GroupId -DartifactId=$ArtifactId -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+# Generate the Maven project in the correct location
+$mavenOutput = mvn archetype:generate `
+    -DgroupId="$($GroupId)" `
+    -DartifactId="$($NormalizedArtifactId)" `
+    -Dpackage="$($GroupId)" `
+    -DarchetypeArtifactId=maven-archetype-quickstart `
+    -DinteractiveMode=false 2>&1
 
-# Check if the expected directory exists
-$GeneratedProjectPath = "$ProjectName/$ArtifactId"
-if (Test-Path $GeneratedProjectPath) {
-    Set-Location -Path $GeneratedProjectPath
-} else {
-    Write-Host "❌ The expected project directory '$GeneratedProjectPath' was not found!" -ForegroundColor Red
+# Check if Maven project was created successfully
+if ($mavenOutput -match "BUILD FAILURE" -or -not (Test-Path "$NormalizedArtifactId/pom.xml")) {
+    Write-Host "❌ Maven project generation failed. Check the output for details." -ForegroundColor Red
+    Write-Host $mavenOutput
     exit
 }
 
+# Rename the created directory to ProjectName
+Rename-Item -Path "$NormalizedArtifactId" -NewName "$ProjectName"
+
+# Move into the ProjectName directory
+Set-Location -Path $ProjectName
+
+# 📌 **GEREKSİZ `App.java` ve `AppTest.java` DOSYALARINI SİL**
+Remove-Item -Force "src/main/java/$($GroupId -replace '\.', '/')/App.java" -ErrorAction SilentlyContinue
+Remove-Item -Force "src/test/java/$($GroupId -replace '\.', '/')/AppTest.java" -ErrorAction SilentlyContinue
+
 # 📌 Determine the correct package path
-$PackagePath = "src/main/java/$($GroupId -replace '\.', '/')/$ArtifactId"
-$TestPackagePath = "src/test/java/$($GroupId -replace '\.', '/')/$ArtifactId"
+$PackagePath = "src/main/java/$($GroupId -replace '\.', '/')/$NormalizedArtifactId"
+$TestPackagePath = "src/test/java/$($GroupId -replace '\.', '/')/$NormalizedArtifactId"
 
 # 📌 Create the required folder structure
 $folders = @(
@@ -74,7 +88,7 @@ foreach ($folder in $folders) {
 # 📌 Read `pom-template.xml` and replace placeholders
 $PomTemplate = Get-Content -Path "../templates/pom-template.xml" -Raw
 $PomTemplate = $PomTemplate -replace "{{GROUP_ID}}", $GroupId
-$PomTemplate = $PomTemplate -replace "{{ARTIFACT_ID}}", $ArtifactId
+$PomTemplate = $PomTemplate -replace "{{ARTIFACT_ID}}", $NormalizedArtifactId
 $PomTemplate = $PomTemplate -replace "{{SPRING_BOOT_VERSION}}", $SpringBootVersion
 Set-Content -Path "pom.xml" -Value $PomTemplate
 
@@ -94,7 +108,7 @@ foreach ($file in $YamlFiles) {
 # 📌 Read Controller template and replace placeholders
 $ControllerTemplate = Get-Content -Path "../templates/ExampleController.java" -Raw
 $ControllerTemplate = $ControllerTemplate -replace "{{GROUP_ID}}", $GroupId
-$ControllerTemplate = $ControllerTemplate -replace "{{ARTIFACT_ID}}", $ArtifactId
+$ControllerTemplate = $ControllerTemplate -replace "{{ARTIFACT_ID}}", $NormalizedArtifactId
 Set-Content -Path "$PackagePath/controller/ExampleController.java" -Value $ControllerTemplate
 
 # 📌 Read Application template and replace placeholders
