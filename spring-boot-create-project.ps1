@@ -10,23 +10,42 @@ if (-not (Get-Command mvn -ErrorAction SilentlyContinue)) {
     exit
 }
 
+# Convert project name to PascalCase for class naming (my-awesome-api -> MyAwesomeApi)
+function ConvertToPascalCase($name) {
+    $parts = $name -split '[-_]'
+    return ($parts | ForEach-Object { $_.Substring(0,1).ToUpper() + $_.Substring(1) }) -join ''
+}
+
+$ApplicationClassName = "$(ConvertToPascalCase $ArtifactId)Application"
+$TestClassName = "$(ConvertToPascalCase $ArtifactId)ApplicationTests"
+$ApplicationName = ConvertToPascalCase $ProjectName  # Convert ProjectName to PascalCase
+
+# Remove dashes from paths (my-awesome-api -> myawesomeapi)
+$ArtifactId = $ArtifactId -replace '[-_]', ''
+
 # Set Java version to 23
 $JavaVersion = "23"
 
 # Fetch the latest stable Spring Boot version dynamically
 $SpringBootVersion = (Invoke-WebRequest -Uri "https://start.spring.io/metadata/client" -UseBasicParsing | ConvertFrom-Json).bootVersion.default
 
-# Create the project directory and navigate to it
+# Create the project directory
 New-Item -ItemType Directory -Path $ProjectName -Force
 Set-Location -Path $ProjectName
 
 # Generate the Maven project
 mvn archetype:generate -DgroupId=$GroupId -DartifactId=$ArtifactId -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
 
-# Move into the project directory
-Set-Location -Path $ArtifactId
+# Check if the expected directory exists
+$GeneratedProjectPath = "$ProjectName/$ArtifactId"
+if (Test-Path $GeneratedProjectPath) {
+    Set-Location -Path $GeneratedProjectPath
+} else {
+    Write-Host "❌ The expected project directory '$GeneratedProjectPath' was not found!" -ForegroundColor Red
+    exit
+}
 
-# 📌 Determine the package path
+# 📌 Determine the correct package path
 $PackagePath = "src/main/java/$($GroupId -replace '\.', '/')/$ArtifactId"
 $TestPackagePath = "src/test/java/$($GroupId -replace '\.', '/')/$ArtifactId"
 
@@ -53,104 +72,41 @@ foreach ($folder in $folders) {
 }
 
 # 📌 Read `pom-template.xml` and replace placeholders
-$PomTemplate = Get-Content -Path "../pom-template.xml" -Raw
+$PomTemplate = Get-Content -Path "../templates/pom-template.xml" -Raw
 $PomTemplate = $PomTemplate -replace "{{GROUP_ID}}", $GroupId
 $PomTemplate = $PomTemplate -replace "{{ARTIFACT_ID}}", $ArtifactId
 $PomTemplate = $PomTemplate -replace "{{SPRING_BOOT_VERSION}}", $SpringBootVersion
 Set-Content -Path "pom.xml" -Value $PomTemplate
 
-# 📌 Create `application.yml`
-$ApplicationYml = @"
-spring:
-  profiles:
-    active: dev
-    include:
-      - common
-      - db
-  application:
-    name: $ProjectName
-"@
-Set-Content -Path "src/main/resources/application.yml" -Value $ApplicationYml
+# 📌 Read and update `application.yml` from templates/yml/
+$ApplicationYaml = Get-Content -Path "../templates/yml/application.yml" -Raw
+$ApplicationYaml = $ApplicationYaml -replace "{{APPLICATION_NAME}}", $ApplicationName
+Set-Content -Path "src/main/resources/application.yml" -Value $ApplicationYaml
 
-# 📌 Create `application-db.yml`
-$ApplicationDbYml = @"
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/mydatabase
-    username: myuser
-    password: mypassword
-    driver-class-name: org.postgresql.Driver
+# 📌 Read and copy `application-db.yml` & `application-common.yml`
+$YamlFiles = @("application-db.yml", "application-common.yml")
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-"@
-Set-Content -Path "src/main/resources/application-db.yml" -Value $ApplicationDbYml
-
-# 📌 Create `application-common.yml`
-$ApplicationCommonYml = @"
-server:
-  port: 8080
-"@
-Set-Content -Path "src/main/resources/application-common.yml" -Value $ApplicationCommonYml
-
-# 📌 Generate a sample Controller
-$ControllerContent = @"
-package $GroupId.$ArtifactId.controller;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-@RestController
-@RequestMapping("/api/example")
-public class ExampleController {
-
-    @GetMapping
-    public String helloWorld() {
-        return "Hello, Spring Boot!";
-    }
+foreach ($file in $YamlFiles) {
+    $content = Get-Content -Path "../templates/yml/$file" -Raw
+    Set-Content -Path "src/main/resources/$file" -Value $content
 }
-"@
-Set-Content -Path "$PackagePath/controller/ExampleController.java" -Value $ControllerContent
 
-# 📌 Create the main application class
-$MainClassContent = @"
-package $GroupId.$ArtifactId;
+# 📌 Read Controller template and replace placeholders
+$ControllerTemplate = Get-Content -Path "../templates/ExampleController.java" -Raw
+$ControllerTemplate = $ControllerTemplate -replace "{{GROUP_ID}}", $GroupId
+$ControllerTemplate = $ControllerTemplate -replace "{{ARTIFACT_ID}}", $ArtifactId
+Set-Content -Path "$PackagePath/controller/ExampleController.java" -Value $ControllerTemplate
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+# 📌 Read Application template and replace placeholders
+$ApplicationTemplate = Get-Content -Path "../templates/Application.java" -Raw
+$ApplicationTemplate = $ApplicationTemplate -replace "{{GROUP_ID}}", $GroupId
+$ApplicationTemplate = $ApplicationTemplate -replace "{{APPLICATION_CLASS}}", $ApplicationClassName
+Set-Content -Path "$PackagePath/$ApplicationClassName.java" -Value $ApplicationTemplate
 
-@SpringBootApplication
-public class Application {
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
-    }
-}
-"@
-Set-Content -Path "$PackagePath/Application.java" -Value $MainClassContent
-
-# 📌 Create a test class for Spring Boot
-$TestClassContent = @"
-package $GroupId.$ArtifactId;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-@SpringBootTest
-class ApplicationTests {
-
-    @Test
-    void contextLoads() {
-        assertThat(true).isTrue();
-    }
-}
-"@
-Set-Content -Path "$TestPackagePath/ApplicationTests.java" -Value $TestClassContent
+# 📌 Read Test template and replace placeholders
+$TestTemplate = Get-Content -Path "../templates/ApplicationTests.java" -Raw
+$TestTemplate = $TestTemplate -replace "{{GROUP_ID}}", $GroupId
+$TestTemplate = $TestTemplate -replace "{{APPLICATION_TEST_CLASS}}", $TestClassName
+Set-Content -Path "$TestPackagePath/$TestClassName.java" -Value $TestTemplate
 
 Write-Host "🚀 Project successfully created: $ProjectName"
