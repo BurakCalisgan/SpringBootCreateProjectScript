@@ -4,6 +4,12 @@ param (
     [string]$ArtifactId = "my-api"
 )
 
+# Check if Maven is installed
+if (-not (Get-Command mvn -ErrorAction SilentlyContinue)) {
+    Write-Host "❌ Maven is not installed or not found in PATH. Please install Maven and try again." -ForegroundColor Red
+    exit
+}
+
 # Set Java version to 23
 $JavaVersion = "23"
 
@@ -20,22 +26,26 @@ mvn archetype:generate -DgroupId=$GroupId -DartifactId=$ArtifactId -DarchetypeAr
 # Move into the project directory
 Set-Location -Path $ArtifactId
 
+# 📌 Determine the package path
+$PackagePath = "src/main/java/$($GroupId -replace '\.', '/')/$ArtifactId"
+$TestPackagePath = "src/test/java/$($GroupId -replace '\.', '/')/$ArtifactId"
+
 # 📌 Create the required folder structure
 $folders = @(
-    "src/main/java/$($GroupId -replace '\.', '/')/config",
-    "src/main/java/$($GroupId -replace '\.', '/')/controller",
-    "src/main/java/$($GroupId -replace '\.', '/')/entity",
-    "src/main/java/$($GroupId -replace '\.', '/')/exception",
-    "src/main/java/$($GroupId -replace '\.', '/')/filter",
-    "src/main/java/$($GroupId -replace '\.', '/')/model/dto/request",
-    "src/main/java/$($GroupId -replace '\.', '/')/model/dto/response",
-    "src/main/java/$($GroupId -replace '\.', '/')/model/enums",
-    "src/main/java/$($GroupId -replace '\.', '/')/repository",
-    "src/main/java/$($GroupId -replace '\.', '/')/service",
-    "src/main/java/$($GroupId -replace '\.', '/')/util/constants",
-    "src/main/java/$($GroupId -replace '\.', '/')/util/props",
+    "$PackagePath/config",
+    "$PackagePath/controller",
+    "$PackagePath/entity",
+    "$PackagePath/exception",
+    "$PackagePath/filter",
+    "$PackagePath/model/dto/request",
+    "$PackagePath/model/dto/response",
+    "$PackagePath/model/enums",
+    "$PackagePath/repository",
+    "$PackagePath/service",
+    "$PackagePath/util/constants",
+    "$PackagePath/util/props",
     "src/main/resources",
-    "src/test/java/$($GroupId -replace '\.', '/')"
+    "$TestPackagePath"
 )
 
 foreach ($folder in $folders) {
@@ -49,7 +59,7 @@ $PomTemplate = $PomTemplate -replace "{{ARTIFACT_ID}}", $ArtifactId
 $PomTemplate = $PomTemplate -replace "{{SPRING_BOOT_VERSION}}", $SpringBootVersion
 Set-Content -Path "pom.xml" -Value $PomTemplate
 
-# 📌 Create the main `application.yml` file
+# 📌 Create `application.yml`
 $ApplicationYml = @"
 spring:
   profiles:
@@ -62,7 +72,7 @@ spring:
 "@
 Set-Content -Path "src/main/resources/application.yml" -Value $ApplicationYml
 
-# 📌 Create the `application-db.yml` file for database configuration
+# 📌 Create `application-db.yml`
 $ApplicationDbYml = @"
 spring:
   datasource:
@@ -80,7 +90,7 @@ spring:
 "@
 Set-Content -Path "src/main/resources/application-db.yml" -Value $ApplicationDbYml
 
-# 📌 Create the `application-common.yml` file
+# 📌 Create `application-common.yml`
 $ApplicationCommonYml = @"
 server:
   port: 8080
@@ -89,7 +99,7 @@ Set-Content -Path "src/main/resources/application-common.yml" -Value $Applicatio
 
 # 📌 Generate a sample Controller
 $ControllerContent = @"
-package $GroupId.controller;
+package $GroupId.$ArtifactId.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -105,11 +115,11 @@ public class ExampleController {
     }
 }
 "@
-Set-Content -Path "src/main/java/$($GroupId -replace '\.', '/')/controller/ExampleController.java" -Value $ControllerContent
+Set-Content -Path "$PackagePath/controller/ExampleController.java" -Value $ControllerContent
 
 # 📌 Create the main application class
 $MainClassContent = @"
-package $GroupId;
+package $GroupId.$ArtifactId;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -121,11 +131,11 @@ public class Application {
     }
 }
 "@
-Set-Content -Path "src/main/java/$($GroupId -replace '\.', '/')/Application.java" -Value $MainClassContent
+Set-Content -Path "$PackagePath/Application.java" -Value $MainClassContent
 
 # 📌 Create a test class for Spring Boot
 $TestClassContent = @"
-package $GroupId;
+package $GroupId.$ArtifactId;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -141,6 +151,6 @@ class ApplicationTests {
     }
 }
 "@
-Set-Content -Path "src/test/java/$($GroupId -replace '\.', '/')/ApplicationTests.java" -Value $TestClassContent
+Set-Content -Path "$TestPackagePath/ApplicationTests.java" -Value $TestClassContent
 
 Write-Host "🚀 Project successfully created: $ProjectName"
