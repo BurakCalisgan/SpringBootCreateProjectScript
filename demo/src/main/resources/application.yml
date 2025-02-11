@@ -1,0 +1,10 @@
+spring:
+  profiles:
+    active: dev
+    include:
+      - common
+      - db
+      - logging
+      - feign
+  application:
+    name: demo

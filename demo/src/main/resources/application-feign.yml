@@ -1,0 +1,11 @@
+#spring:
+#  cloud:
+#    openfeign:
+#      lazy-attributes-resolution: true
+
+feign:
+  connect-timeout: 5000
+  read-timeout: 5000
+  client:
+    json-place-holder:
+      url: ${ENV_JSON_PLACE_HOLDER_HOST:https://jsonplaceholder.typicode.com}
