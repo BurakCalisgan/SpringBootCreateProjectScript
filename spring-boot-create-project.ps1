@@ -64,16 +64,21 @@ $TestPackagePath = "src/test/java/$($GroupId -replace '\.', '/')/$NormalizedArti
 
 # 📌 Create the required folder structure
 $folders = @(
+    "$PackagePath/client/model/request",
+    "$PackagePath/client/model/response",
     "$PackagePath/config",
     "$PackagePath/controller",
     "$PackagePath/entity",
     "$PackagePath/exception",
     "$PackagePath/filter",
+    "$PackagePath/mapper",
     "$PackagePath/model/dto/request",
     "$PackagePath/model/dto/response",
     "$PackagePath/model/enums",
     "$PackagePath/repository",
-    "$PackagePath/service",
+    "$PackagePath/service/business",
+    "$PackagePath/service/domain",
+    "$PackagePath/service/external",
     "$PackagePath/util/constants",
     "$PackagePath/util/props",
     "src/main/resources",
@@ -97,7 +102,7 @@ $ApplicationYaml = $ApplicationYaml -replace "{{APPLICATION_NAME}}", $Applicatio
 Set-Content -Path "src/main/resources/application.yml" -Value $ApplicationYaml
 
 # 📌 Read and copy `application-db.yml` & `application-common.yml`
-$YamlFiles = @("application-db.yml", "application-common.yml")
+$YamlFiles = @("application-db.yml", "application-common.yml", "application-feign.yml", "application-logging.yml")
 
 foreach ($file in $YamlFiles) {
     $content = Get-Content -Path "../templates/yml/$file" -Raw
@@ -113,12 +118,14 @@ Set-Content -Path "$PackagePath/controller/ExampleController.java" -Value $Contr
 # 📌 Read Application template and replace placeholders
 $ApplicationTemplate = Get-Content -Path "../templates/Application.java" -Raw
 $ApplicationTemplate = $ApplicationTemplate -replace "{{GROUP_ID}}", $GroupId
+$ApplicationTemplate = $ApplicationTemplate -replace "{{ARTIFACT_ID}}", $NormalizedArtifactId
 $ApplicationTemplate = $ApplicationTemplate -replace "{{APPLICATION_CLASS}}", $ApplicationClassName
 Set-Content -Path "$PackagePath/$ApplicationClassName.java" -Value $ApplicationTemplate
 
 # 📌 Read Test template and replace placeholders
 $TestTemplate = Get-Content -Path "../templates/ApplicationTests.java" -Raw
 $TestTemplate = $TestTemplate -replace "{{GROUP_ID}}", $GroupId
+$TestTemplate = $TestTemplate -replace "{{ARTIFACT_ID}}", $NormalizedArtifactId
 $TestTemplate = $TestTemplate -replace "{{APPLICATION_TEST_CLASS}}", $TestClassName
 Set-Content -Path "$TestPackagePath/$TestClassName.java" -Value $TestTemplate
 

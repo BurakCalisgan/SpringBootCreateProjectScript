@@ -4,5 +4,7 @@ spring:
     include:
       - common
       - db
+      - logging
+      - feign
   application:
     name: {{APPLICATION_NAME}}

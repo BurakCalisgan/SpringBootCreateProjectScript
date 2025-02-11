@@ -1,4 +1,4 @@
-package {{GROUP_ID}};
+package {{GROUP_ID}}.{{ARTIFACT_ID}};
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

@@ -1,13 +1,21 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/mydatabase
-    username: myuser
-    password: mypassword
     driver-class-name: org.postgresql.Driver
-
+    url: jdbc:postgresql://${ENV_POSTGRES_HOST:localhost}:${ENV_POSTGRES_PORT:5432}/${ENV_POSTGRES_DB:postgres}
+    username: ${ENV_POSTGRES_USER:postgres}
+    password: ${ENV_POSTGRES_PASSWORD:postgres}
+    # JPA properties
   jpa:
     hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+      ddl-auto: validate # When you launch the application for the first time - switch "none" at "create"
+    show-sql: true
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+    generate-ddl: true
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+      FAIL_ON_EMPTY_BEANS: false
+    deserialization:
+      unwrap-root-value: false
