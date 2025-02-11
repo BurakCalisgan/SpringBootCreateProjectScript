@@ -89,11 +89,39 @@ foreach ($folder in $folders) {
     New-Item -ItemType Directory -Path $folder -Force
 }
 
+# Copy Git-related files from templates/git
+$GitTemplateDir = "../templates/git"
+$GitFiles = @(".gitignore", ".gitattributes")
+
+foreach ($file in $GitFiles) {
+    if (Test-Path "$GitTemplateDir/$file") {
+        Copy-Item -Path "$GitTemplateDir/$file" -Destination "." -Force
+    }
+}
+
+# Copy Maven-related files from templates/maven
+$MavenTemplateDir = "../templates/maven"
+$MavenFiles = @("mvnw", "mvnw.cmd")
+
+foreach ($file in $MavenFiles) {
+    if (Test-Path "$MavenTemplateDir/$file") {
+        Copy-Item -Path "$MavenTemplateDir/$file" -Destination "." -Force
+    }
+}
+
+# Copy .mvn folder from templates/maven
+$MvnFolder = "$MavenTemplateDir/.mvn"
+if (Test-Path $MvnFolder) {
+    Copy-Item -Path "$MvnFolder" -Destination "." -Recurse -Force
+}
+
 # 📌 Read `pom-template.xml` and replace placeholders
 $PomTemplate = Get-Content -Path "../templates/pom-template.xml" -Raw
 $PomTemplate = $PomTemplate -replace "{{GROUP_ID}}", $GroupId
+$PomTemplate = $PomTemplate -replace "{{ARTIFACT_ID_WITH_DASH}}", $ArtifactId
 $PomTemplate = $PomTemplate -replace "{{ARTIFACT_ID}}", $NormalizedArtifactId
 $PomTemplate = $PomTemplate -replace "{{SPRING_BOOT_VERSION}}", $SpringBootVersion
+$PomTemplate = $PomTemplate -replace "{{JAVA_VERSION}}", $JavaVersion
 Set-Content -Path "pom.xml" -Value $PomTemplate
 
 # 📌 Read and update `application.yml` from templates/yml/
@@ -110,20 +138,20 @@ foreach ($file in $YamlFiles) {
 }
 
 # 📌 Read Controller template and replace placeholders
-$ControllerTemplate = Get-Content -Path "../templates/ExampleController.java" -Raw
+$ControllerTemplate = Get-Content -Path "../templates/classes/ExampleController.java" -Raw
 $ControllerTemplate = $ControllerTemplate -replace "{{GROUP_ID}}", $GroupId
 $ControllerTemplate = $ControllerTemplate -replace "{{ARTIFACT_ID}}", $NormalizedArtifactId
 Set-Content -Path "$PackagePath/controller/ExampleController.java" -Value $ControllerTemplate
 
 # 📌 Read Application template and replace placeholders
-$ApplicationTemplate = Get-Content -Path "../templates/Application.java" -Raw
+$ApplicationTemplate = Get-Content -Path "../templates/classes/Application.java" -Raw
 $ApplicationTemplate = $ApplicationTemplate -replace "{{GROUP_ID}}", $GroupId
 $ApplicationTemplate = $ApplicationTemplate -replace "{{ARTIFACT_ID}}", $NormalizedArtifactId
 $ApplicationTemplate = $ApplicationTemplate -replace "{{APPLICATION_CLASS}}", $ApplicationClassName
 Set-Content -Path "$PackagePath/$ApplicationClassName.java" -Value $ApplicationTemplate
 
 # 📌 Read Test template and replace placeholders
-$TestTemplate = Get-Content -Path "../templates/ApplicationTests.java" -Raw
+$TestTemplate = Get-Content -Path "../templates/classes/ApplicationTests.java" -Raw
 $TestTemplate = $TestTemplate -replace "{{GROUP_ID}}", $GroupId
 $TestTemplate = $TestTemplate -replace "{{ARTIFACT_ID}}", $NormalizedArtifactId
 $TestTemplate = $TestTemplate -replace "{{APPLICATION_TEST_CLASS}}", $TestClassName

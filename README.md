@@ -52,28 +52,41 @@ Spring Boot projesini oluşturmak için:
 ```
 my-awesome-api  
 │── pom.xml  
+│── .gitignore  
+│── .gitattributes
 │── src  
 │   ├── main  
 │   │   ├── java/com/example/myawesomeapi  
+│   │   │   ├── client/  
+│   │   │   │   ├── model/  
+│   │   │   │   │   ├── request/  
+│   │   │   │   │   ├── response/  
 │   │   │   ├── config/  
 │   │   │   ├── controller/  
 │   │   │   │   ├── ExampleController.java  
 │   │   │   ├── entity/  
 │   │   │   ├── exception/  
 │   │   │   ├── filter/  
+│   │   │   ├── mapper/  
 │   │   │   ├── model/  
 │   │   │   │   ├── dto/request/  
 │   │   │   │   ├── dto/response/  
 │   │   │   │   ├── enums/  
 │   │   │   ├── repository/  
 │   │   │   ├── service/  
-│   │   │   ├── util/constants/  
-│   │   │   ├── util/props/  
+│   │   │   │   ├── business/  
+│   │   │   │   ├── domain/  
+│   │   │   │   ├── external/  
+│   │   │   ├── util/  
+│   │   │   │   ├── constants/  
+│   │   │   │   ├── props/  
 │   │   │   ├── MyAwesomeApiApplication.java  
 │   │   ├── resources/  
 │   │   │   ├── application.yml  
 │   │   │   ├── application-db.yml  
+│   │   │   ├── application-feign.yml  
 │   │   │   ├── application-common.yml  
+│   │   │   ├── application-logging.yml  
 │   ├── test/java/com/example/myawesomeapi  
 │   │   ├── MyAwesomeApiApplicationTests.java  
 ```

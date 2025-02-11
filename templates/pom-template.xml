@@ -3,7 +3,7 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-
+	
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
@@ -14,11 +14,12 @@
 	<groupId>{{GROUP_ID}}</groupId>
 	<artifactId>{{ARTIFACT_ID}}</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>demo</name>
+	<name>{{ARTIFACT_ID_WITH_DASH}}</name>
 	<description>{{ARTIFACT_ID}} for Spring Boot</description>
 
 	<properties>
-		<java.version>23</java.version>
+		<java.version>{{JAVA_VERSION}}</java.version>
+		<spring.boot.version>{{SPRING_BOOT_VERSION}}</spring.boot.version>
 		<mapstruct.version>1.6.3</mapstruct.version>
 	</properties>
 
@@ -86,10 +87,10 @@
 		</dependency>
 
 		<!-- Liquibase -->
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.liquibase</groupId>
 			<artifactId>liquibase-core</artifactId>
-		</dependency>
+		</dependency> -->
 
 		<!-- Spring Boot Starter Test -->
 		<dependency>
@@ -132,10 +133,10 @@
 					</excludes>
 				</configuration>
 			</plugin>
-			<plugin>
+			<!-- <plugin>
 				<groupId>org.liquibase</groupId>
 				<artifactId>liquibase-maven-plugin</artifactId>
-			</plugin>
+			</plugin> -->
 		</plugins>
 	</build>
 
