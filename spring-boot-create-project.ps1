@@ -115,6 +115,16 @@ if (Test-Path $MvnFolder) {
     Copy-Item -Path "$MvnFolder" -Destination "." -Recurse -Force
 }
 
+# Copy Docker Compose files from templates/dockercompose
+$DockerTemplateDir = "../templates/dockercompose"
+$DockerFiles = @("docker-compose.override.yaml", "docker-compose.yaml")
+
+foreach ($file in $DockerFiles) {
+    if (Test-Path "$DockerTemplateDir/$file") {
+        Copy-Item -Path "$DockerTemplateDir/$file" -Destination "." -Force
+    }
+}
+
 # 📌 Read `pom-template.xml` and replace placeholders
 $PomTemplate = Get-Content -Path "../templates/pom-template.xml" -Raw
 $PomTemplate = $PomTemplate -replace "{{GROUP_ID}}", $GroupId
